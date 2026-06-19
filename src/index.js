@@ -86,7 +86,8 @@ async function handleAnalyze({url},env){
   let title='',text='';
   try{const r=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},signal:AbortSignal.timeout(8000)});const html=await r.text();title=extractTitle(html);text=extractText(html);}catch(e){return{isError:true,content:[{type:"text",text:`기사 접근 오류: ${e.message}`}]};}
   if(text.length<100)return{isError:true,content:[{type:"text",text:"본문 추출 실패. 원본 URL을 확인하거나 본문을 직접 붙여넣어 주세요."}]};
-  if(/별세|부고|향년|타계|사망|逝去|영면|소천|서거/.test(title+' '+text.slice(0,500)))return{content:[{type:"text",text:"고인의 명예와 유족을 존중하여\n부고 기사는 분석 대상에서 제외합니다.\n삼가 고인의 명복을 빕니다. 🙏"}]};
+  if(/별세|부고|향년|타계|逝去|영면|소천|서거/.test(title+' '+text.slice(0,500)))return{content:[{type:"text",text:"고인의 명예와 유족을 존중하여\n부고 기사는 분석 대상에서 제외합니다.\n삼가 고인의 명복을 빕니다. 🙏"}]};
+  if(/아동학대|아동살해|영아살해|아동성|존속살해|존속폭행|성폭행|성착취|살해 후 자살|일가족 살해/.test(title+' '+text.slice(0,500)))return{content:[{type:"text",text:"이 기사는 분석 대상에서 제외합니다."}]};
   // 1단계: 기사 맥락 분류 + 위키 병렬 호출
   const [cls,wiki]=await Promise.all([classifyArticle(env.OPENAI_API_KEY,title,text),fetchWiki(title.slice(0,20))]);
   // 2단계 준비: 분류 결과 기반 조건부 데이터 로드
