@@ -3,8 +3,16 @@ main = "src/index.js"
 compatibility_date = "2025-03-26"
 compatibility_flags = ["nodejs_compat"]
 
+[placement]
+mode = "smart"
+
 [observability]
 enabled = true
 
 [ai]
 binding = "AI"
+
+[[d1_databases]]
+binding      = "DB"
+database_name = "news-mixer-db"
+database_id  = "0e326020-5cf9-49ac-8cf8-d68d219ddb8e"
