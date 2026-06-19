@@ -148,13 +148,13 @@ export default {
   async fetch(request,env){
     const url=new URL(request.url);
     if(request.method==='OPTIONS'){return new Response(null,{headers:{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type,Authorization','Access-Control-Max-Age':'86400'}});}
-    if(url.pathname!=='/mcp')return new Response(JSON.stringify({service:'기자야 내가 간다',version:'5.4',status:'ok'}),{headers:{'Content-Type':'application/json'}});
-    if(request.method==='GET'){return jres(null,{protocolVersion:'2025-03-26',capabilities:{tools:{}},serverInfo:{name:'gijaya-naega-ganda',version:'5.4'}});}
+    if(url.pathname!=='/mcp')return new Response(JSON.stringify({service:'기자야 내가 간다',version:'5.5',status:'ok'}),{headers:{'Content-Type':'application/json'}});
+    if(request.method==='GET'){return jres(null,{protocolVersion:'2025-03-26',capabilities:{tools:{}},serverInfo:{name:'gijaya-naega-ganda',version:'5.5'}});}
     if(request.method!=='POST')return new Response('Method not allowed',{status:405});
     let body;
     try{body=await request.json();}catch{return jerr(null,-32700,'Parse error');}
     const{id,method,params}=body;
-    if(method==='initialize')return jres(id,{protocolVersion:'2025-03-26',capabilities:{tools:{}},serverInfo:{name:'gijaya-naega-ganda',version:'5.4'}});
+    if(method==='initialize')return jres(id,{protocolVersion:'2025-03-26',capabilities:{tools:{}},serverInfo:{name:'gijaya-naega-ganda',version:'5.5'}});
     if(method==='notifications/initialized')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':'*'}});
     if(method==='ping')return jres(id,{});
     if(method==='tools/list')return jres(id,{tools:TOOLS});
