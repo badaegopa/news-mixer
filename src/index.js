@@ -1,3 +1,10 @@
+// ============================================
+// 기자야 내가 간다 기본 템플릿 v1.0
+// 확정일: 2026-06-19
+// 섹션: 전쟁상황요약 | 핵심수치카드 | 타임라인
+//       차트 | 한국경제파급 | D코드분석
+//       핵심GAP | 다층분석프레임워크 | 푸터
+// ============================================
 async function callAI(openaiKey, sys, user, maxTokens=2000) {
   const r=await fetch('https://api.openai.com/v1/chat/completions',{
     method:'POST',
