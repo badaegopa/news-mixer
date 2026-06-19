@@ -9,9 +9,6 @@ mode = "smart"
 [observability]
 enabled = true
 
-[ai]
-binding = "AI"
-
 [[d1_databases]]
 binding      = "DB"
 database_name = "news-mixer-db"

@@ -1,6 +1,12 @@
-async function callAI(ai, sys, user, maxTokens=2000) {
-  const res=await ai.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast",{messages:[{role:"system",content:sys},{role:"user",content:user}],max_tokens:maxTokens});
-  return res.response||"no response";
+async function callAI(openaiKey, sys, user, maxTokens=2000) {
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${openaiKey}`},
+    body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:sys},{role:'user',content:user}],max_tokens:maxTokens}),
+    signal:AbortSignal.timeout(30000)
+  });
+  const d=await r.json();
+  return d.choices?.[0]?.message?.content||"no response";
 }
 async function fetchEcos(key) {
   const now=new Date(),end=now.toISOString().slice(0,10).replace(/-/g,''),start=new Date(now-30*86400000).toISOString().slice(0,10).replace(/-/g,'');
@@ -95,14 +101,14 @@ D코드: D1-BRI기본권 D2-SSI사회불안 D3-GPI지정학 D4-EPI폭발근접 D
     '## JSON_STRUCTURED: {"keywords":["주제키워드1","주제키워드2","주제키워드3"],"gaps":["누락갭1","누락갭2","누락갭3"],"category":"경제·금융|정치·외교|사회·복지|국제·지정학|환경·기후|기타 중 하나"}'
   ];
   const user=`제목:${title}\n${wiki?`위키:${wiki}\n`:''}본문:${text.slice(0,2000)}\n\n${sects.join('\n\n')}`;
-  try{const a=await callAI(env.AI,sys,user,2300);const structured=parseStructured(a);const display=a.replace(/##\s*JSON_STRUCTURED[\s\S]*$/,'').trim();await saveToD1(env.DB,{url,press_name:extractPressName(url),keywords:structured.keywords,gaps:structured.gaps,analyzed_at:new Date().toISOString(),scope:detectScope(url),category:structured.category});const stats=await fetchStats(env.DB);const footer=`\n\n---\n⚡ 기자야, 내가 간다 | Λ¹² 사회동역학 엔진 | everbluesea.org\n1. 분석 내용을 출처 명시 없이 임의로 무단 발췌 및 배포하거나 상업적 이용 금지\n2. 자체 엔진으로 분석한 내용은 참고자료로만 활용 가능\n🔬 엔진 상세: https://everbluesea.org/reports`;return{content:[{type:"text",text:`**기자야 내가 간다 v5.0**\n**${title}**\n\n${display}${econCtx?`\n\n---\n*ECOS: ${econCtx.slice(0,60)}*`:''}${formatStats(stats)}${footer}`}]};}
+  try{const a=await callAI(env.OPENAI_API_KEY,sys,user,2300);const structured=parseStructured(a);const display=a.replace(/##\s*JSON_STRUCTURED[\s\S]*$/,'').trim();await saveToD1(env.DB,{url,press_name:extractPressName(url),keywords:structured.keywords,gaps:structured.gaps,analyzed_at:new Date().toISOString(),scope:detectScope(url),category:structured.category});const stats=await fetchStats(env.DB);const footer=`\n\n---\n⚡ 기자야, 내가 간다 | Λ¹² 사회동역학 엔진 | everbluesea.org\n1. 분석 내용을 출처 명시 없이 임의로 무단 발췌 및 배포하거나 상업적 이용 금지\n2. 자체 엔진으로 분석한 내용은 참고자료로만 활용 가능\n🔬 엔진 상세: https://everbluesea.org/reports`;return{content:[{type:"text",text:`**기자야 내가 간다 v5.0**\n**${title}**\n\n${display}${econCtx?`\n\n---\n*ECOS: ${econCtx.slice(0,60)}*`:''}${formatStats(stats)}${footer}`}]};}
   catch(e){return{isError:true,content:[{type:"text",text:`분석 오류: ${e.message}`}]};}
 }
 async function handleGaps({article_text},env){
   const economic=isEconomicContent(article_text.slice(0,500));
   const ecos=economic?await fetchEcos(env.ECOS_API_KEY||'RVE8ZH17L6IACFDWVCH6'):{};
   const econCtx=Object.entries(ecos).map(([k,v])=>`${k}: ${v}`).join(' | ')||'';
-  try{const r=await callAI(env.AI,`Λ¹² 분석엔진${econCtx?`. ECOS: ${econCtx}`:''}`,`기자가 제시하지 않은 중요 공공 데이터와 맥락 5가지:\n\n${article_text.slice(0,2000)}`,800);return{content:[{type:"text",text:r}]};}
+  try{const r=await callAI(env.OPENAI_API_KEY,`Λ¹² 분석엔진${econCtx?`. ECOS: ${econCtx}`:''}`,`기자가 제시하지 않은 중요 공공 데이터와 맥락 5가지:\n\n${article_text.slice(0,2000)}`,800);return{content:[{type:"text",text:r}]};}
   catch(e){return{isError:true,content:[{type:"text",text:`오류: ${e.message}`}]};}
 }
 async function handleFeedback({url,feedback},env){
