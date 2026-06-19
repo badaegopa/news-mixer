@@ -15,22 +15,21 @@ async function fetchWiki(kw) {
 function isEconomicContent(text){return /금리|환율|주식|채권|경제|금융|GDP|물가|인플레|부동산|증권|코스피|달러|수출|수입|무역|통화|재정|예산|세금|세율|투자|기업|산업|소비|고용|취업|실업|임금|소득|성장|긴축|적자|흑자|은행|보험|연금|ETF|통화정책|기준금리|국고채|외환/.test(text);}
 function defaultClassify(){return{category:'기타',has_bsli:false,has_eta:false,has_ecos:false,d_codes:[]};}
 function detectDCodesKeyword(corpus){const c=corpus;const codes=[];if(/인권|언론자유|집회금지|표현의\s*자유|검열/.test(c))codes.push('D1-BRI');if(/시위|파업|폭동|사회불안|갈등|분규/.test(c))codes.push('D2-SSI');if(/전쟁|외교|지정학|미중|동맹|북핵|안보|군사협력/.test(c))codes.push('D3-GPI');if(/혁명|봉기|쿠데타|정권붕괴|내전/.test(c))codes.push('D4-EPI');if(/법안|개혁|탄핵|위헌|입법|제도개선/.test(c))codes.push('D5-IGI');if(/대통령|국무총리|지도자|리더십|통치/.test(c))codes.push('D6-LPI');if(/자본도주|외환위기|달러부족|환율방어|자본통제/.test(c))codes.push('D7-CFD');if(/계엄|군사작전|진압|무력충돌|병력/.test(c))codes.push('D8-MFI');if(/의료개혁|교육혁신|기술혁신|회복력|재건/.test(c))codes.push('D9-RHC');if(/이민|난민|인구감소|이민자|외국인노동/.test(c))codes.push('D10-DCI');if(/재벌|독점|담합|과두|반독점/.test(c))codes.push('D11-OLI');if(/여론조작|가짜뉴스|언론편향|미디어장악|담론/.test(c))codes.push('D12-ADI');return codes.slice(0,4);}
-async function classifyArticle(ai,title,text){
+async function classifyArticle(openaiKey,title,text){
   const sys='기사 분류 전문가. 반드시 JSON만 반환. 다른 텍스트 금지.';
-  const user=`아래 기사를 분석해 JSON 하나만 반환하라.
-
-제목: ${title}
-본문: ${text.slice(0,600)}
-
-반환:
-{"category":"경제|사회|지정학|정치|환경|기타","has_bsli":true/false,"has_eta":true/false,"has_ecos":true/false,"d_codes":["최대 4개"]}
-
-기준:
-has_bsli: 서민·민생·복지·주거·의료비·임금 관련이면 true
-has_eta: 정책대책·처방·지원방안이 기사에 명시되면 true
-has_ecos: 금리·환율·채권·주가 등 경제지표가 필요하면 true
-d_codes: D1=인권/자유/언론 D2=갈등/시위/파업 D3=전쟁/외교/지정학 D4=혁명/위기 D5=법안/제도/개혁 D6=대통령/지도자 D7=투자/자본/외환 D8=군/계엄/진압 D9=교육/의료/혁신 D10=인구/이민/난민 D11=재벌/독점 D12=여론/미디어`;
-  try{const res=await ai.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast',{messages:[{role:'system',content:sys},{role:'user',content:user}],max_tokens:150});const raw=res.response?.trim()||'{}';let p;try{p=JSON.parse(raw);}catch{const m=raw.match(/\{[\s\S]*?\}/);if(!m)return defaultClassify();try{p=JSON.parse(m[0]);}catch{return defaultClassify();}}return{category:p.category||'기타',has_bsli:!!p.has_bsli,has_eta:!!p.has_eta,has_ecos:!!p.has_ecos,d_codes:Array.isArray(p.d_codes)?p.d_codes.slice(0,4):[]};}catch{return defaultClassify();}
+  const user=`아래 기사를 분석해 JSON 하나만 반환하라.\n\n제목: ${title}\n본문: ${text.slice(0,600)}\n\n반환:\n{"category":"경제|사회|지정학|정치|환경|기타","has_bsli":true/false,"has_eta":true/false,"has_ecos":true/false,"d_codes":["최대 4개"]}\n\n기준:\nhas_bsli: 서민·민생·복지·주거·의료비·임금 관련이면 true\nhas_eta: 정책대책·처방·지원방안이 기사에 명시되면 true\nhas_ecos: 금리·환율·채권·주가 등 경제지표가 필요하면 true\nd_codes: D1=인권/자유/언론 D2=갈등/시위/파업 D3=전쟁/외교/지정학 D4=혁명/위기 D5=법안/제도/개혁 D6=대통령/지도자 D7=투자/자본/외환 D8=군/계엄/진압 D9=교육/의료/혁신 D10=인구/이민/난민 D11=재벌/독점 D12=여론/미디어`;
+  try{
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${openaiKey}`},
+      body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:sys},{role:'user',content:user}],max_tokens:150,temperature:0,response_format:{type:'json_object'}}),
+      signal:AbortSignal.timeout(8000)
+    });
+    const d=await r.json();
+    const raw=d.choices?.[0]?.message?.content?.trim()||'{}';
+    let p;try{p=JSON.parse(raw);}catch{const m=raw.match(/\{[\s\S]*?\}/);if(!m)return defaultClassify();try{p=JSON.parse(m[0]);}catch{return defaultClassify();}}
+    return{category:p.category||'기타',has_bsli:!!p.has_bsli,has_eta:!!p.has_eta,has_ecos:!!p.has_ecos,d_codes:Array.isArray(p.d_codes)?p.d_codes.slice(0,4):[]};
+  }catch{return defaultClassify();}
 }
 function extractTitle(html){const og=html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);if(og)return og[1];const t=html.match(/<title[^>]*>([^<]+)<\/title>/i);if(t)return t[1].replace(/\s*[-|].*$/,'').trim();return'제목 없음';}
 function extractText(html){return html.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,3000);}
@@ -74,7 +73,7 @@ async function handleAnalyze({url},env){
   try{const r=await fetch(url,{headers:{'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},signal:AbortSignal.timeout(8000)});const html=await r.text();title=extractTitle(html);text=extractText(html);}catch(e){return{isError:true,content:[{type:"text",text:`기사 접근 오류: ${e.message}`}]};}
   if(text.length<100)return{isError:true,content:[{type:"text",text:"본문 추출 실패. 원본 URL을 확인하거나 본문을 직접 붙여넣어 주세요."}]};
   // 1단계: 기사 맥락 분류 + 위키 병렬 호출
-  const [cls,wiki]=await Promise.all([classifyArticle(env.AI,title,text),fetchWiki(title.slice(0,20))]);
+  const [cls,wiki]=await Promise.all([classifyArticle(env.OPENAI_API_KEY,title,text),fetchWiki(title.slice(0,20))]);
   // 2단계 준비: 분류 결과 기반 조건부 데이터 로드
   const ecos=cls.has_ecos?await fetchEcos(ecosKey):{};
   const econCtx=Object.keys(ecos).length>0?Object.entries(ecos).map(([k,v])=>`${k}: ${v}`).join(' | '):'';
