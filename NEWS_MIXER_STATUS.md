@@ -13,7 +13,7 @@
 
 - **플랜**: Paid (Workers Paid)
 - **이름**: news-mixer
-- **배포 URL**: https://news-mixer.badaegopa.workers.dev
+- **배포 URL**: https://news-mixer.giseub12.workers.dev
 - **compatibility_date**: 2025-03-26
 - **D1 데이터베이스**: news-mixer-db (`0e326020-5cf9-49ac-8cf8-d68d219ddb8e`)
 
